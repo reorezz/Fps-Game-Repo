@@ -6,7 +6,7 @@ public class move : MonoBehaviour
 {
     public Rigidbody rb;
     public CapsuleCollider cc;
-    public Transform bottom, aboveBottom, center, aboveCenter, Top,Eyes,rightW,LeftW;
+    public Transform bottom, aboveBottom, center, aboveCenter, Top,Eyes,rightW,LeftW,wallPlayerPos;
     public Camera cam;
     public bool onGround, Sprinting, crouching, InAir, Onslopes, WallRunWallRight,WallRunWallLeft;
     public LayerMask GroundLayer,WallRunLayer;
@@ -54,6 +54,7 @@ public class move : MonoBehaviour
 
     [Header("Waall move")]
     public float wall_Move_Time;
+    public float moveForceWall,wallJumpforce,MaxUpwardMovement, sidewayForcewall;
 
     private void Start()
     {
@@ -74,6 +75,15 @@ public class move : MonoBehaviour
         RotatePlayer();
         checkCollision();
         fOVHandler();
+        if(WallRunWallRight || WallRunWallLeft)
+        {
+            CamWallRotator();
+        }
+       
+        else
+        {
+            CamToNormalafterWallRun();
+        }
         dashTemop = transform.forward + cam.transform.forward;
         Debug.DrawRay(transform.position, dashTemop, Color.cyan);
 
@@ -104,6 +114,7 @@ public class move : MonoBehaviour
             }else if(crouching)
             {
                 currentspeed = CrouchSpeed;
+             
                 MaxSpeed = CrouchSpeed;
             }else
             {
@@ -121,11 +132,13 @@ public class move : MonoBehaviour
          
         if(WallRunWallRight)
         {
-
+            rb.useGravity = false;
+            //rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         }
-        if(WallRunWallRight)
+        if(WallRunWallLeft)
         {
-
+            rb.useGravity = false;
+           // rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         }
     }
 
@@ -133,9 +146,12 @@ public class move : MonoBehaviour
     private void FixedUpdate()
     {
         if(!WallRunWallRight && !WallRunWallLeft)
-        rb.AddForce(Vector3.down * 1000f * Time.deltaTime);
-       if(onGround)
-        {if(jupPressed && CanJum)
+          rb.AddForce(Vector3.down * 1000f * Time.deltaTime);
+        
+      
+        if(onGround)
+        {
+            if(jupPressed && CanJum)
             {
                 JumpBaby();
             }
@@ -144,19 +160,20 @@ public class move : MonoBehaviour
            counterMoveThePlayer();
         }
 
-
-       if(InAir)
+        else if(InAir)
         {
             InairMovemnt();
             counterAirmovemnt();
         }
 
-        if (WallRunWallRight)
+        else if (WallRunWallLeft)
         {
+           
             DoWallRunMovemntLeft();
         }
-        if (WallRunWallRight)
+        else if (WallRunWallRight)
         {
+           // rb.isKinematic = true;
             DoWallRunMovemntRight();
         }
     }
@@ -229,34 +246,44 @@ public class move : MonoBehaviour
 
         RaycastHit WallRightHit;
         Debug.DrawRay(rightW.position, rightW.right, Color.white);
-        if (Physics.Raycast(rightW.position, rightW.right, out WallRightHit,0.15f,WallRunLayer) && x>0f)
-        {
-           
-            Debug.Log("We Sexy Ahhhh Right");
 
-         //   if ( == "WallRun")
-           WallRunWallRight = true;
+
+        if (Physics.Raycast(transform.position, rightW.right, out WallRightHit, 01f, WallRunLayer) && Input.GetKey(KeyCode.D) )
+        {
+            //Physics.CheckBox(rightW.position, new Vector3(0.25f, 0.4f, 0.25f), transform.rotation, WallRunLayer) 
+            //   Debug.Log("We Sexy Ahhhh Right");
+
+            //   if ( == "WallRun")
+            // rb.isKinematic = true;
+            rb.useGravity = false;
+            WallRunWallRight = true;
             InAir = false;
             onGround = false;
         }
         else
         {
+            // rb.isKinematic = false;
+            rb.useGravity = true;
+          //  rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
             WallRunWallRight = false;
         }
-        RaycastHit WallLeftHit;
-        Debug.DrawRay(rightW.position, rightW.right, Color.white);
-        if (Physics.Raycast(LeftW.position, -LeftW.right, out WallLeftHit, 0.15f, WallRunLayer) && x < 0f)
+      //  RaycastHit WallLeftHit;
+        Debug.DrawRay(transform.position, -LeftW.right, Color.white);
+        if (Physics.Raycast(transform.position, -LeftW.right, out WallRightHit, 01f, WallRunLayer) && Input.GetKey(KeyCode.A))
         {
 
-            Debug.Log("We Sexy Ahhhh left");
-
+            //  Debug.Log("We Sexy Ahhhh left");
+            //  rb.isKinematic = true;
             //   if ( == "WallRun")
+            rb.useGravity = false;
             WallRunWallLeft = true;
             InAir = false;
             onGround = false;
         }
         else
         {
+            //  rb.isKinematic = false;
+            rb.useGravity = true;
             WallRunWallLeft = false;
 
         }
@@ -581,9 +608,60 @@ public class move : MonoBehaviour
 
     void DoWallRunMovemntLeft()
     {
+       // Debug.Log(y);
+        rb.drag = 0f;
+        if( rb.velocity.magnitude<MaxSpeedOnGround+10f)
+        {
 
+            rb.AddForce(transform.forward * Time.deltaTime * moveForceWall);
+            rb.AddForce(-transform.right * Time.deltaTime * sidewayForcewall / 5);
+        }
+      
+        if( Input.GetKey(KeyCode.D) && Input.GetButton("Jump"))
+        {
+            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce ,ForceMode.Impulse);
+            rb.AddForce(transform.right * Time.deltaTime * wallJumpforce,ForceMode.Impulse);
+            rb.AddForce(transform.up * Time.deltaTime * JumpForce*2f);
+        }
+        else if (Input.GetButton("Jump"))
+        {
+            rb.AddForce(transform.up * Time.deltaTime * JumpForce);
+        }
     }
     void DoWallRunMovemntRight()
+    {
+       // Debug.Log("Left");
+        rb.drag = 0f;
+        if (rb.velocity.magnitude < MaxSpeedOnGround+10f)
+        {
+            rb.AddForce(transform.forward * Time.deltaTime * moveForceWall);
+            rb.AddForce(transform.forward * Time.deltaTime * moveForceWall / 5);
+        }
+        
+        if (Input.GetKey(KeyCode.A) && Input.GetButton("Jump" ))
+        {
+            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce ,ForceMode.Impulse);
+            rb.AddForce(-transform.right * Time.deltaTime * wallJumpforce, ForceMode.Impulse);
+            rb.AddForce(transform.up * Time.deltaTime * JumpForce*2f);
+        }else if(Input.GetButton("Jump"))
+        {
+            rb.AddForce(transform.up * Time.deltaTime * JumpForce);
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.white;
+        Gizmos.DrawCube(rightW.position, new Vector3(0.25f, 0.4f, 0.25f));
+        Gizmos.DrawCube(LeftW.position, new Vector3(0.25f, 0.4f, 0.25f));
+        // Gizmos.DrawSphere(rightW.position, 0.3f);
+        //  Gizmos.DrawSphere(LeftW.position, 0.3f);
+    }
+    void CamWallRotator()
+    {
+
+    }
+    void CamToNormalafterWallRun()
     {
 
     }
