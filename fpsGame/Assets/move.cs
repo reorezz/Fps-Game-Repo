@@ -31,6 +31,7 @@ public class move : MonoBehaviour
     public bool Canuncrouch;
     public Vector3 Playersace, CrouchScale;
     public ForceMode CrouchFMode;
+    public float CrouchSlideThreshold;//Min speed required for the player to slide;
 
     [Header("Slopes")]
     public float slopemultiplier;
@@ -55,6 +56,8 @@ public class move : MonoBehaviour
     [Header("Waall move")]
     public float wall_Move_Time;
     public float moveForceWall,wallJumpforce,MaxUpwardMovement, sidewayForcewall;
+    public float MaxCamTilt;
+    float wallRunTilt = 0f;
 
     private void Start()
     {
@@ -69,21 +72,13 @@ public class move : MonoBehaviour
     }
     private void Update()
     {
-        // Debug.Log(rb.velocity);
+        // Debug.Log(rb.velocity.magnitude);
        // Debug.Log(cam.transform.forward);
         getInput();
         RotatePlayer();
         checkCollision();
         fOVHandler();
-        if(WallRunWallRight || WallRunWallLeft)
-        {
-            CamWallRotator();
-        }
-       
-        else
-        {
-            CamToNormalafterWallRun();
-        }
+        
         dashTemop = transform.forward + cam.transform.forward;
         Debug.DrawRay(transform.position, dashTemop, Color.cyan);
 
@@ -210,13 +205,48 @@ public class move : MonoBehaviour
     /// <summary>
     /// Player rotation
     /// </summary>
-    float YR=0f;//y rotaion temp
+    float YR = 0f;//y rotaion temp adn wall runnng camera tilt
+    
     void RotatePlayer()
     {
         transform.Rotate(Vector3.up * xsens * mx * Time.deltaTime * mouse_Sens_Multiplier);
         YR -= ysens * my * mouse_Sens_Multiplier * Time.deltaTime;
         YR = Mathf.Clamp(YR, -70f, 75f);
-        Eyes.localRotation = Quaternion.Euler(YR, 0f, 0f);
+       
+        if(WallRunWallLeft || WallRunWallRight)
+        {
+            if (WallRunWallLeft)//turn left//make titlt value negative
+            {
+                if (wallRunTilt > -MaxCamTilt )
+                {
+                    wallRunTilt -= Time.deltaTime * 2 * MaxCamTilt;
+                }
+            }
+            if(WallRunWallRight)
+            {
+                if(wallRunTilt<MaxCamTilt)
+                {
+                    wallRunTilt += Time.deltaTime * 2 * MaxCamTilt;
+                }
+            }
+            
+
+        }
+        else if(wallRunTilt!=0)
+        {
+            if(wallRunTilt < 0f)
+            {
+                // wallRunTilt += Time.deltaTime * 2 * MaxCamTilt;
+               wallRunTilt= Mathf.Lerp(wallRunTilt, 0f, Time.deltaTime * 2 * MaxCamTilt);
+
+            }else if(wallRunTilt>0f)
+            {
+                // wallRunTilt -= Time.deltaTime * 2 * MaxCamTilt;
+               wallRunTilt= Mathf.Lerp(wallRunTilt, 0f, Time.deltaTime * 2 * MaxCamTilt);
+            }
+            
+        }
+            Eyes.localRotation = Quaternion.Euler(YR, 0f, wallRunTilt);
 
     }
 
@@ -245,7 +275,7 @@ public class move : MonoBehaviour
         } else Canuncrouch = true;
 
         RaycastHit WallRightHit;
-        Debug.DrawRay(rightW.position, rightW.right, Color.white);
+        Debug.DrawRay(transform.position, rightW.right, Color.white);
 
 
         if (Physics.Raycast(transform.position, rightW.right, out WallRightHit, 01f, WallRunLayer) && Input.GetKey(KeyCode.D) )
@@ -310,9 +340,17 @@ public class move : MonoBehaviour
         }
         if(crouching)
         {
-            if (Time.time - cp < 1.05f)
-                rb.AddForce(transform.forward * Time.deltaTime * crouchForce, CrouchFMode);
+            if(rb.velocity.magnitude > CrouchSlideThreshold)
+            {
+                if (Time.time - cp < 1.05f)
+                {
+                    rb.AddForce(transform.forward * Time.deltaTime * crouchForce, CrouchFMode);
+                }
+            }
+           
         }
+
+               
         if(Onslopes)
         {
             slopeMovemnent();
@@ -610,11 +648,12 @@ public class move : MonoBehaviour
     {
        // Debug.Log(y);
         rb.drag = 0f;
-        if( rb.velocity.magnitude<MaxSpeedOnGround+10f)
+        rb.AddForce(-transform.right * Time.deltaTime * sidewayForcewall / 3f);
+        if ( rb.velocity.magnitude<MaxSpeedOnGround+10f)
         {
 
             rb.AddForce(transform.forward * Time.deltaTime * moveForceWall);
-            rb.AddForce(-transform.right * Time.deltaTime * sidewayForcewall / 5);
+           
         }
       
         if( Input.GetKey(KeyCode.D) && Input.GetButton("Jump"))
@@ -626,16 +665,19 @@ public class move : MonoBehaviour
         else if (Input.GetButton("Jump"))
         {
             rb.AddForce(transform.up * Time.deltaTime * JumpForce);
+            rb.AddForce(-transform.right * Time.deltaTime * JumpForce / 2);
+            rb.AddForce(transform.forward * Time.deltaTime * JumpForce / 3f);
         }
     }
     void DoWallRunMovemntRight()
     {
        // Debug.Log("Left");
         rb.drag = 0f;
+        rb.AddForce(transform.right * Time.deltaTime * moveForceWall / 3);
         if (rb.velocity.magnitude < MaxSpeedOnGround+10f)
         {
             rb.AddForce(transform.forward * Time.deltaTime * moveForceWall);
-            rb.AddForce(transform.forward * Time.deltaTime * moveForceWall / 5);
+            
         }
         
         if (Input.GetKey(KeyCode.A) && Input.GetButton("Jump" ))
@@ -646,6 +688,8 @@ public class move : MonoBehaviour
         }else if(Input.GetButton("Jump"))
         {
             rb.AddForce(transform.up * Time.deltaTime * JumpForce);
+            rb.AddForce(transform.right * Time.deltaTime * JumpForce / 2);
+            rb.AddForce(transform.forward * Time.deltaTime * JumpForce / 3f);
         }
     }
 
@@ -657,12 +701,6 @@ public class move : MonoBehaviour
         // Gizmos.DrawSphere(rightW.position, 0.3f);
         //  Gizmos.DrawSphere(LeftW.position, 0.3f);
     }
-    void CamWallRotator()
-    {
 
-    }
-    void CamToNormalafterWallRun()
-    {
-
-    }
+    
 }
