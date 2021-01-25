@@ -65,9 +65,10 @@ public class move : MonoBehaviour
         cc = transform.GetComponent<CapsuleCollider>();
         Playersace = transform.localScale;
         temp6 = dashForce;
-        defaulrFOv = cam.fieldOfView;
+        cam.fieldOfView = defaulrFOv ;
         Temp7 = FovMultiplier;//for fov
         Temp8 = RateOfChangeOfFOV;//for fov
+       
         
     }
     private void Update()
@@ -77,7 +78,7 @@ public class move : MonoBehaviour
         getInput();
         RotatePlayer();
         checkCollision();
-        fOVHandler();
+       // fOVHandler();
         
         dashTemop = transform.forward + cam.transform.forward;
         Debug.DrawRay(transform.position, dashTemop, Color.cyan);
@@ -237,12 +238,12 @@ public class move : MonoBehaviour
             if(wallRunTilt < 0f)
             {
                 // wallRunTilt += Time.deltaTime * 2 * MaxCamTilt;
-               wallRunTilt= Mathf.Lerp(wallRunTilt, 0f, Time.deltaTime * 2 * MaxCamTilt);
+               wallRunTilt= Mathf.Lerp(wallRunTilt, 0f, Time.deltaTime  *wall_Move_Time);
 
             }else if(wallRunTilt>0f)
             {
                 // wallRunTilt -= Time.deltaTime * 2 * MaxCamTilt;
-               wallRunTilt= Mathf.Lerp(wallRunTilt, 0f, Time.deltaTime * 2 * MaxCamTilt);
+               wallRunTilt= Mathf.Lerp(wallRunTilt, 0f, Time.deltaTime  *wall_Move_Time);
             }
             
         }
@@ -615,7 +616,7 @@ public class move : MonoBehaviour
  
     void fOVHandler()
     {
-        //handel the fov withrespect to the change in velocity
+        //handel the fov withrespect to the change in velocityWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
         // as speed increase we increase fov
        if(Mathf.Abs(Dir.y)>0f || Sprinting||dashPressed)
         {
@@ -648,7 +649,7 @@ public class move : MonoBehaviour
     {
        // Debug.Log(y);
         rb.drag = 0f;
-        rb.AddForce(-transform.right * Time.deltaTime * sidewayForcewall / 3f);
+        rb.AddForce(-transform.right * Time.deltaTime * moveForceWall / 3f);
         if ( rb.velocity.magnitude<MaxSpeedOnGround+10f)
         {
 
@@ -658,22 +659,22 @@ public class move : MonoBehaviour
       
         if( Input.GetKey(KeyCode.D) && Input.GetButton("Jump"))
         {
-            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce ,ForceMode.Impulse);
-            rb.AddForce(transform.right * Time.deltaTime * wallJumpforce,ForceMode.Impulse);
-            rb.AddForce(transform.up * Time.deltaTime * JumpForce*2f);
+            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce*2 ,ForceMode.Impulse);
+            rb.AddForce(transform.right * Time.deltaTime * wallJumpforce*2,ForceMode.Impulse);
+            rb.AddForce(transform.up * Time.deltaTime * MaxUpwardMovement,ForceMode.Impulse);
         }
         else if (Input.GetButton("Jump"))
         {
-            rb.AddForce(transform.up * Time.deltaTime * JumpForce);
-            rb.AddForce(-transform.right * Time.deltaTime * JumpForce / 2);
-            rb.AddForce(transform.forward * Time.deltaTime * JumpForce / 3f);
+            rb.AddForce(transform.up * Time.deltaTime * wallJumpforce);
+            rb.AddForce(-transform.right * Time.deltaTime * wallJumpforce );
+            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce*2);
         }
     }
     void DoWallRunMovemntRight()
     {
        // Debug.Log("Left");
         rb.drag = 0f;
-        rb.AddForce(transform.right * Time.deltaTime * moveForceWall / 3);
+        rb.AddForce(transform.right * Time.deltaTime * moveForceWall *1.5f);
         if (rb.velocity.magnitude < MaxSpeedOnGround+10f)
         {
             rb.AddForce(transform.forward * Time.deltaTime * moveForceWall);
@@ -682,14 +683,15 @@ public class move : MonoBehaviour
         
         if (Input.GetKey(KeyCode.A) && Input.GetButton("Jump" ))
         {
-            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce ,ForceMode.Impulse);
-            rb.AddForce(-transform.right * Time.deltaTime * wallJumpforce, ForceMode.Impulse);
-            rb.AddForce(transform.up * Time.deltaTime * JumpForce*2f);
-        }else if(Input.GetButton("Jump"))
+            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce*2 ,ForceMode.Impulse);
+            rb.AddForce(-transform.right * Time.deltaTime * wallJumpforce*2, ForceMode.Impulse);
+            rb.AddForce(transform.up * Time.deltaTime *MaxUpwardMovement, ForceMode.Impulse);
+        }
+        else if(Input.GetButton("Jump"))
         {
-            rb.AddForce(transform.up * Time.deltaTime * JumpForce);
-            rb.AddForce(transform.right * Time.deltaTime * JumpForce / 2);
-            rb.AddForce(transform.forward * Time.deltaTime * JumpForce / 3f);
+            rb.AddForce(transform.up * Time.deltaTime * wallJumpforce);
+            rb.AddForce(transform.right * Time.deltaTime * wallJumpforce );
+            rb.AddForce(transform.forward * Time.deltaTime * wallJumpforce*2  );
         }
     }
 
